@@ -1,0 +1,14 @@
+{
+  "name": "lecture-management-app",
+  "version": "1.0.0",
+  "description": "نظام إدارة المحاضرات المطور",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  }
+}

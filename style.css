@@ -1,0 +1,65 @@
+:root {
+    --primary: #2c3e50;
+    --secondary: #34495e;
+    --accent: #3498db;
+    --success: #27ae60;
+    --danger: #e74c3c;
+    --warning: #f1c40f;
+    --light: #f8f9fa;
+    --shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+* { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+body { margin: 0; background-color: #f0f2f5; display: flex; height: 100vh; overflow: hidden; }
+
+/* الشاشات */
+#auth-screen { position: fixed; inset: 0; background: linear-gradient(45deg, var(--primary), var(--accent)); display: flex; justify-content: center; align-items: center; z-index: 2000; }
+.auth-card { background: white; padding: 30px; border-radius: 15px; box-shadow: var(--shadow); width: 100%; max-width: 400px; text-align: center; }
+.auth-input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
+
+#app-screen { display: none; width: 100%; height: 100%; flex-direction: row; }
+
+/* القائمة الجانبية */
+.sidebar { width: 260px; background: var(--primary); color: white; display: flex; flex-direction: column; transition: 0.3s; flex-shrink: 0; }
+.profile-box { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.nav-item { padding: 15px 25px; cursor: pointer; display: flex; align-items: center; gap: 15px; color: #ecf0f1; transition: 0.3s; }
+.nav-item:hover, .nav-item.active { background: var(--accent); color: white; }
+
+/* المحتوى الرئيسي */
+.content { flex: 1; padding: 25px; overflow-y: auto; position: relative; }
+.section { display: none; animation: fadeIn 0.3s ease; }
+.section.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* الجداول والعناصر */
+.card { background: white; padding: 20px; border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 20px; }
+table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; }
+th { background: var(--secondary); color: white; padding: 15px; }
+td { padding: 12px; text-align: center; border-bottom: 1px solid #eee; }
+
+.grade-input { width: 60px; padding: 5px; text-align: center; border: 1px solid #ddd; border-radius: 4px; }
+
+/* واجهة Meet */
+.meet-container { background: #202124; border-radius: 15px; overflow: hidden; position: relative; min-height: 450px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+#videoPreview { width: 100%; max-height: 550px; background: #000; transform: scaleX(-1); }
+.meet-controls { position: absolute; bottom: 20px; display: flex; gap: 15px; background: rgba(0,0,0,0.6); padding: 15px 30px; border-radius: 50px; }
+.meet-btn { border: none; border-radius: 50%; width: 50px; height: 50px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: white; transition: 0.3s; background: #3c4043; }
+.meet-btn:hover { transform: scale(1.1); }
+
+/* الأزرار */
+.btn { padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
+.btn-primary { background: var(--accent); color: white; }
+.btn-success { background: var(--success); color: white; }
+.btn-danger { background: var(--danger); color: white; }
+
+/* التجاوب */
+@media (max-width: 768px) {
+    #app-screen { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; flex-direction: row; overflow-x: auto; }
+    .profile-box { display: none; }
+    .nav-item { padding: 10px; font-size: 12px; flex-direction: column; gap: 5px; }
+}
+
+#toast { visibility: hidden; min-width: 250px; background: #333; color: white; text-align: center; border-radius: 8px; padding: 16px; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 3000; }
+#toast.show { visibility: visible; animation: fadeinout 3s; }
+@keyframes fadeinout { 0%, 100% { opacity: 0; bottom: 0; } 15%, 85% { opacity: 1; bottom: 30px; } }
