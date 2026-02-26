@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام إدارة المحاضرات المطور</title>
-    <!-- الروابط الخارجية -->
+    <title>نظام إدارة المحاضرات (MyClassManager)</title>
+    <!-- مكتبة الأيقونات -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- ملف التصميم الخاص بنا -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -23,8 +24,8 @@
         <div class="auth-card" id="signup-box" style="display:none;">
             <h2>إنشاء حساب جديد</h2>
             <input type="text" id="regName" class="auth-input" placeholder="الاسم الكامل">
-            <input type="text" id="regSub" class="auth-input" placeholder="المادة الدراسية">
-            <input type="text" id="regUser" class="auth-input" placeholder="اسم المستخدم">
+            <input type="text" id="regSub" class="auth-input" placeholder="اسم الصف (مثال: مرحلة أولى)">
+            <input type="text" id="regUser" class="auth-input" placeholder="اسم المستخدم (للدخول)">
             <input type="password" id="regPass" class="auth-input" placeholder="كلمة المرور">
             <button class="btn btn-success" style="width:100%" onclick="signup()">إنشاء الحساب</button>
             <p onclick="toggleAuth()" style="cursor:pointer; font-size: 0.9rem; margin-top:15px; color: #666;">العودة للدخول</p>
@@ -37,8 +38,10 @@
             <div class="profile-box">
                 <i class="fas fa-university fa-3x"></i>
                 <h3 id="displayUserName">-</h3>
-                <span id="displayUserSub">-</span>
+                <span id="displayUserSub" style="opacity: 0.8; font-size:0.9rem">-</span>
             </div>
+            
+            <div onclick="nav('classes_mgmt')" class="nav-item"><i class="fas fa-layer-group"></i> الصفوف والمواد</div>
             <div onclick="nav('dashboard')" class="nav-item active"><i class="fas fa-chart-pie"></i> لوحة الإحصائيات</div>
             <div onclick="nav('meeting')" class="nav-item"><i class="fas fa-video"></i> تسجيل مباشر (Meet)</div>
             <div onclick="nav('students')" class="nav-item"><i class="fas fa-users"></i> إدارة الطلاب</div>
@@ -50,45 +53,49 @@
         </aside>
 
         <main class="content">
-            <!-- 1. الإحصائيات -->
+            
+            <!-- قسم إدارة الصفوف -->
+            <div id="classes_mgmt" class="section">
+                <h2>إدارة الصفوف والمراحل</h2>
+                <div class="card">
+                    <p style="color:#666; margin-bottom:15px;">يمكنك هنا إضافة صفوف أو مواد جديدة والتبديل بينها.</p>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="newClassName" class="auth-input" placeholder="اسم الصف الجديد (مثال: فيزياء - مرحلة 2)" style="margin:0; flex:1;">
+                        <button class="btn btn-success" onclick="addNewClass()">إضافة صف</button>
+                    </div>
+                </div>
+                <h3>الصفوف الحالية</h3>
+                <div id="classesList" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:15px;"></div>
+            </div>
+
+            <!-- لوحة التحكم -->
             <div id="dashboard" class="section active">
-                <h2>نظرة عامة</h2>
+                <h2>نظرة عامة <span id="dashClassName" style="font-size:0.6em; color:var(--accent)"></span></h2>
                 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px;">
-                    <div class="card" style="border-right: 5px solid var(--accent)">
-                        <h3 id="statCount">0</h3>
-                        <p>إجمالي الطلاب</p>
-                    </div>
-                    <div class="card" style="border-right: 5px solid var(--success)">
-                        <h3 id="statPass">0%</h3>
-                        <p>نسبة النجاح</p>
-                    </div>
-                    <div class="card" style="border-right: 5px solid var(--warning)">
-                        <h3 id="statAvg">0</h3>
-                        <p>متوسط الدرجات</p>
-                    </div>
+                    <div class="card" style="border-right: 5px solid var(--accent)"><h3 id="statCount">0</h3><p>إجمالي الطلاب</p></div>
+                    <div class="card" style="border-right: 5px solid var(--success)"><h3 id="statPass">0%</h3><p>نسبة النجاح</p></div>
+                    <div class="card" style="border-right: 5px solid var(--warning)"><h3 id="statAvg">0</h3><p>متوسط الدرجات</p></div>
                 </div>
             </div>
 
-            <!-- 2. التسجيل المباشر (Meet) -->
+            <!-- الاجتماع -->
             <div id="meeting" class="section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                     <h2>غرفة تسجيل المحاضرة</h2>
-                    <div id="recStatus" style="color:red; font-weight:bold; display:none;">
-                        <i class="fas fa-circle-dot"></i> جارِ التسجيل...
-                    </div>
+                    <div id="recStatus" style="color:red; font-weight:bold; display:none;"><i class="fas fa-circle-dot"></i> جارِ التسجيل...</div>
                 </div>
                 <div class="meet-container">
                     <video id="videoPreview" autoplay muted playsinline></video>
                     <div class="meet-controls">
-                        <button class="meet-btn" id="camBtn" onclick="toggleCamera()" title="تشغيل/إيقاف الكاميرا"><i class="fas fa-video"></i></button>
-                        <button class="meet-btn btn-danger" id="startRec" onclick="startRecording()" title="بدء التسجيل"><i class="fas fa-microphone-lines"></i></button>
-                        <button class="meet-btn btn-primary" id="stopRec" onclick="stopRecording()" style="display:none;" title="إيقاف"><i class="fas fa-stop"></i></button>
-                        <button class="meet-btn btn-success" id="downloadBtn" onclick="downloadVideo()" style="display:none;" title="تحميل الفيديو"><i class="fas fa-download"></i></button>
+                        <button class="meet-btn" id="camBtn" onclick="toggleCamera()"><i class="fas fa-video"></i></button>
+                        <button class="meet-btn btn-danger" id="startRec" onclick="startRecording()"><i class="fas fa-microphone-lines"></i></button>
+                        <button class="meet-btn btn-primary" id="stopRec" onclick="stopRecording()" style="display:none;"><i class="fas fa-stop"></i></button>
+                        <button class="meet-btn btn-success" id="downloadBtn" onclick="downloadVideo()" style="display:none;"><i class="fas fa-download"></i></button>
                     </div>
                 </div>
             </div>
 
-            <!-- 3. الطلاب -->
+            <!-- الطلاب -->
             <div id="students" class="section">
                 <h2>إدارة الطلاب</h2>
                 <div class="card" style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -98,51 +105,43 @@
                     <input type="text" id="searchStd" placeholder="بحث سريع..." style="width:100%; margin-top:10px; padding:10px;" onkeyup="renderStudents()">
                 </div>
                 <div class="card">
-                    <table id="stdTable">
-                        <thead><tr><th>الرقم</th><th>الاسم</th><th>إجراءات</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
+                    <table id="stdTable"><thead><tr><th>الرقم</th><th>الاسم</th><th>إجراءات</th></tr></thead><tbody></tbody></table>
                 </div>
             </div>
 
-            <!-- 4. كشف الدرجات -->
+            <!-- الدرجات -->
             <div id="grades" class="section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                     <h2>سجل الدرجات النهائي</h2>
                     <button class="btn btn-success" onclick="exportExcel()"><i class="fas fa-file-excel"></i> تصدير Excel</button>
                 </div>
                 <div class="card" style="overflow-x:auto;">
-                    <table id="gradesTable">
-                        <thead><tr id="gradesHead"></tr></thead>
-                        <tbody></tbody>
-                    </table>
+                    <table id="gradesTable"><thead><tr id="gradesHead"></tr></thead><tbody></tbody></table>
                 </div>
                 <button class="btn btn-primary" onclick="saveAllGrades()" style="width:100%; margin-top:10px;"><i class="fas fa-save"></i> حفظ جميع الدرجات</button>
             </div>
 
-            <!-- 5. التفاعل -->
+            <!-- التفاعل -->
             <div id="interaction" class="section">
                 <h2>نظام النقاط السريع</h2>
                 <div id="interCards" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:15px;"></div>
             </div>
 
-            <!-- 6. الحضور -->
+            <!-- الحضور -->
             <div id="attendance" class="section">
                 <h2>سجل الحضور اليومي</h2>
+                <p style="font-size:0.9rem; color:var(--success);"><i class="fas fa-info-circle"></i> تنويه: عند حفظ الحضور، سيتم إضافة نقطة تفاعل تلقائياً لكل طالب حاضر.</p>
                 <div class="card">
                     <input type="date" id="attDate" class="auth-input" style="width:auto; margin-left:10px;">
                     <button class="btn btn-primary" onclick="renderAttendance()">عرض القائمة</button>
                 </div>
                 <div class="card" id="attList" style="display:none;">
-                    <table id="attTable">
-                        <thead><tr><th>الاسم</th><th>حاضر</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                    <button class="btn btn-success" onclick="saveAttendance()" style="width:100%; margin-top:15px;">حفظ الحضور</button>
+                    <table id="attTable"><thead><tr><th>الاسم</th><th>حاضر</th></tr></thead><tbody></tbody></table>
+                    <button class="btn btn-success" onclick="saveAttendance()" style="width:100%; margin-top:15px;">حفظ الحضور (+1 تفاعل)</button>
                 </div>
             </div>
 
-            <!-- 7. الإعدادات -->
+            <!-- الإعدادات -->
             <div id="settings" class="section">
                 <h2>إعدادات النظام</h2>
                 <div class="card" style="max-width:500px;">
@@ -161,6 +160,11 @@
 
     <div id="toast"></div>
 
+    <!-- مكتبات Firebase (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <!-- ملف الجافاسكريبت الخاص بنا -->
     <script src="script.js"></script>
 </body>
 </html>
