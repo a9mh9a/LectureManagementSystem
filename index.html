@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة المحاضرات (MyClassManager)</title>
+    <!-- مكتبة الأيقونات -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- مكتبة Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .delete-btn { color: #e74c3c; cursor: pointer; float: left; margin-left: 5px; font-size: 1.1rem; }
+        .delete-btn:hover { color: #c0392b; }
+        .btn-import { background: #27ae60; color: white; padding: 10px; border-radius: 5px; cursor: pointer; display: inline-block; font-size: 0.9rem; border: none; }
+        input[type="number"] { width: 60px; padding: 5px; border-radius: 4px; border: 1px solid #ddd; text-align: center; }
+        .nav-item { cursor: pointer; }
+        #app-screen { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- شاشة الدخول -->
+    <div id="auth-screen">
+        <div class="auth-card" id="login-box">
+            <i class="fas fa-user-tie fa-3x" style="color:var(--accent); display:block; text-align:center; margin-bottom:15px;"></i>
+            <h2 style="text-align:center;">تسجيل الدخول</h2>
+            <input type="text" id="logUser" class="auth-input" placeholder="اسم المستخدم">
+            <input type="password" id="logPass" class="auth-input" placeholder="كلمة المرور">
+            <button class="btn btn-primary" style="width:100%" onclick="login()">دخول</button>
+            <p onclick="toggleAuth()" style="cursor:pointer; font-size: 0.9rem; margin-top:15px; color: #666; text-align:center;">ليس لديك حساب؟ سجل الآن</p>
+        </div>
+        <div class="auth-card" id="signup-box" style="display:none;">
+            <h2 style="text-align:center;">إنشاء حساب جديد</h2>
+            <input type="text" id="regName" class="auth-input" placeholder="الاسم الكامل">
+            <input type="text" id="regSub" class="auth-input" placeholder="اسم الصف (مثال: مرحلة أولى)">
+            <input type="text" id="regUser" class="auth-input" placeholder="اسم المستخدم">
+            <input type="password" id="regPass" class="auth-input" placeholder="كلمة المرور">
+            <button class="btn btn-success" style="width:100%" onclick="signup()">إنشاء الحساب</button>
+            <p onclick="toggleAuth()" style="cursor:pointer; font-size: 0.9rem; margin-top:15px; color: #666; text-align:center;">العودة للدخول</p>
+        </div>
+    </div>
+
+    <!-- واجهة التطبيق -->
+    <div id="app-screen">
+        <aside class="sidebar">
+            <div class="profile-box">
+                <i class="fas fa-university fa-3x"></i>
+                <h3 id="displayUserName">-</h3>
+                <span id="displayUserSub" style="opacity: 0.8; font-size:0.9rem">-</span>
+            </div>
+            <div onclick="nav('classes_mgmt')" class="nav-item"><i class="fas fa-layer-group"></i> الصفوف والمواد</div>
+            <div onclick="nav('dashboard')" class="nav-item active"><i class="fas fa-chart-pie"></i> لوحة الإحصائيات</div>
+            <div onclick="nav('meeting')" class="nav-item"><i class="fas fa-video"></i> تسجيل مباشر (Meet)</div>
+            <div onclick="nav('students')" class="nav-item"><i class="fas fa-users"></i> إدارة الطلاب</div>
+            <div onclick="nav('grades')" class="nav-item"><i class="fas fa-file-invoice"></i> كشف الدرجات</div>
+            <div onclick="nav('interaction')" class="nav-item"><i class="fas fa-star"></i> التفاعل الصفي</div>
+            <div onclick="nav('attendance')" class="nav-item"><i class="fas fa-calendar-check"></i> الحضور والغياب</div>
+            <div onclick="nav('settings')" class="nav-item"><i class="fas fa-cog"></i> الإعدادات</div>
+            <div onclick="logout()" class="nav-item" style="margin-top:auto; color:var(--danger);"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</div>
+        </aside>
+
+        <main class="content">
+            <!-- إدارة الصفوف -->
+            <div id="classes_mgmt" class="section">
+                <h2>إدارة الصفوف والمواد</h2>
+                <div class="card">
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="newClassName" class="auth-input" placeholder="اسم الصف الجديد" style="margin:0; flex:1;">
+                        <button class="btn btn-success" onclick="addNewClass()">إضافة صف</button>
+                    </div>
+                </div>
+                <h3>الصفوف الحالية</h3>
+                <div id="classesList" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:15px;"></div>
+            </div>
+
+            <!-- لوحة التحكم -->
+            <div id="dashboard" class="section active">
+                <h2>نظرة عامة <span id="dashClassName" style="font-size:0.6em; color:var(--accent)"></span></h2>
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px;">
+                    <div class="card" style="border-right: 5px solid var(--accent)"><h3 id="statCount">0</h3><p>إجمالي الطلاب</p></div>
+                    <div class="card" style="border-right: 5px solid var(--success)"><h3 id="statPass">0%</h3><p>نسبة النجاح</p></div>
+                    <div class="card" style="border-right: 5px solid var(--warning)"><h3 id="statAvg">0</h3><p>متوسط الدرجات</p></div>
+                </div>
+            </div>
+
+            <!-- الطلاب -->
+            <div id="students" class="section">
+                <h2>إدارة الطلاب</h2>
+                <div class="card" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                    <input type="text" id="stdName" placeholder="اسم الطالب" style="flex:2; padding:10px; border-radius:5px; border:1px solid #ddd;">
+                    <input type="text" id="stdId" placeholder="الرقم الجامعي" style="flex:1; padding:10px; border-radius:5px; border:1px solid #ddd;">
+                    <button class="btn btn-primary" onclick="addStudent()">إضافة طالب</button>
+                    <label class="btn-import">
+                        <i class="fas fa-file-excel"></i> استيراد من Excel
+                        <input type="file" id="importFile" accept=".xlsx, .xls" style="display:none" onchange="importFromExcel(event)">
+                    </label>
+                    <input type="text" id="searchStd" placeholder="بحث بالاسم أو الرقم..." style="width:100%; margin-top:10px; padding:10px;" onkeyup="renderStudents()">
+                </div>
+                <div class="card"><table id="stdTable"><thead><tr><th>الرقم</th><th>الاسم</th><th>إجراءات</th></tr></thead><tbody></tbody></table></div>
+            </div>
+
+            <!-- كشف الدرجات -->
+            <div id="grades" class="section">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h2>سجل الدرجات النهائي</h2>
+                    <button class="btn btn-success" onclick="exportExcel()"><i class="fas fa-file-excel"></i> تصدير Excel</button>
+                </div>
+                <div class="card" style="overflow-x:auto;">
+                    <table id="gradesTable">
+                        <thead>
+                            <tr><th>الرقم</th><th>الاسم</th><th>واجبات</th><th>تفاعل</th><th>نصفي</th><th>نهائي</th><th>المجموع</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- التفاعل -->
+            <div id="interaction" class="section">
+                <h2>نقاط التفاعل السريع</h2>
+                <div id="interCards" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:15px;"></div>
+            </div>
+
+            <!-- الحضور -->
+            <div id="attendance" class="section">
+                <h2>سجل الحضور اليومي</h2>
+                <div class="card" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <input type="date" id="attDate" class="auth-input" style="width:auto; margin:0;">
+                    <input type="text" id="lectureName" class="auth-input" placeholder="اسم أو رقم المحاضرة" style="flex:1; margin:0;">
+                    <button class="btn btn-primary" onclick="renderAttendance()">عرض القائمة</button>
+                </div>
+                <div class="card" id="attList" style="display:none;">
+                    <table id="attTable"><thead><tr><th>الاسم</th><th>حاضر</th></tr></thead><tbody></tbody></table>
+                    <button class="btn btn-success" onclick="saveAttendance()" style="width:100%; margin-top:15px;">حفظ الحضور (+1 تفاعل)</button>
+                </div>
+            </div>
+
+            <!-- الاجتماع -->
+            <div id="meeting" class="section">
+                <h2>غرفة تسجيل المحاضرة</h2>
+                <div class="meet-container" style="background:#000; height:400px; border-radius:10px; position:relative; overflow:hidden;">
+                    <video id="videoPreview" autoplay muted style="width:100%; height:100%; object-fit:cover;"></video>
+                    <div style="position:absolute; bottom:20px; width:100%; text-align:center; display:flex; justify-content:center; gap:10px;">
+                        <button class="btn btn-primary" onclick="toggleCamera()"><i class="fas fa-video"></i></button>
+                        <button class="btn btn-danger" id="startRec" onclick="startRecording()">بدء التسجيل</button>
+                        <button class="btn btn-warning" id="stopRec" onclick="stopRecording()" style="display:none;">إيقاف</button>
+                        <button class="btn btn-success" id="downloadBtn" onclick="downloadVideo()" style="display:none;">تحميل</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- الإعدادات -->
+            <div id="settings" class="section">
+                <h2>توزيع الدرجات (100 درجة)</h2>
+                <div class="card" style="max-width:400px;">
+                    <div style="display:grid; gap:15px;">
+                        <label>الواجبات: <input type="number" id="maxHw" class="auth-input"></label>
+                        <label>التفاعل: <input type="number" id="maxPart" class="auth-input"></label>
+                        <label>النصفي: <input type="number" id="maxMid" class="auth-input"></label>
+                        <label>النهائي: <input type="number" id="maxFinal" class="auth-input"></label>
+                    </div>
+                    <button class="btn btn-primary" style="margin-top:20px; width:100%;" onclick="saveSettings()">حفظ التوزيع الجديد</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast"></div>
+
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDa3RKxfXqoBen_IbpUNvREWK5vd9TzMg4",
+            authDomain: "myclassmanager-dcb24.firebaseapp.com",
+            databaseURL: "https://myclassmanager-dcb24-default-rtdb.firebaseio.com",
+            projectId: "myclassmanager-dcb24",
+            storageBucket: "myclassmanager-dcb24.firebasestorage.app",
+            messagingSenderId: "538737788584",
+            appId: "1:538737788584:web:ca74a3c7ccb0c09484649d"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let currentUser = null, currentClassId = null;
+
+        // المصادقة والتنقل
+        function toggleAuth() {
+            const l = document.getElementById('login-box'), s = document.getElementById('signup-box');
+            l.style.display = (l.style.display==='none')?'block':'none';
+            s.style.display = (s.style.display==='none')?'block':'none';
+        }
+
+        function nav(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            
+            // تحديث البيانات عند الانتقال للتبويبات
+            if(id === 'students') renderStudents();
+            if(id === 'grades') renderGrades();
+            if(id === 'interaction') renderInteraction();
+            if(id === 'classes_mgmt') renderClasses();
+        }
+
+        function login() {
+            const u = document.getElementById('logUser').value, p = document.getElementById('logPass').value;
+            db.ref('users/'+u).once('value', snap => {
+                const d = snap.val();
+                if(d && d.pass === p) {
+                    currentUser = u;
+                    document.getElementById('auth-screen').style.display = 'none';
+                    document.getElementById('app-screen').style.display = 'flex';
+                    document.getElementById('displayUserName').innerText = d.name;
+                    document.getElementById('displayUserSub').innerText = d.sub;
+                    loadSettings(); renderClasses();
+                } else alert("بيانات الدخول خاطئة");
+            });
+        }
+
+        function signup() {
+            const n = document.getElementById('regName').value, u = document.getElementById('regUser').value, 
+                  p = document.getElementById('regPass').value, s = document.getElementById('regSub').value;
+            if(!u || !p) return alert("املاً البيانات");
+            db.ref('users/'+u).set({name:n, sub:s, pass:p, settings: {hw:20, part:10, mid:30, final:40}}).then(()=> {
+                alert("تم إنشاء الحساب"); toggleAuth();
+            });
+        }
+
+        function logout() { location.reload(); }
+
+        // إدارة الصفوف والمواد
+        function renderClasses() {
+            db.ref(`users/${currentUser}/classes`).on('value', snap => {
+                const list = document.getElementById('classesList'); list.innerHTML = '';
+                snap.forEach(c => {
+                    list.innerHTML += `<div class="card" onclick="selectClass('${c.key}', '${c.val().name}')" style="cursor:pointer">
+                        <i class="fas fa-trash delete-btn" onclick="deleteClass(event, '${c.key}')"></i>
+                        <h4>${c.val().name}</h4></div>`;
+                });
+            });
+        }
+        function addNewClass() {
+            const n = document.getElementById('newClassName').value;
+            if(n) db.ref(`users/${currentUser}/classes`).push({name:n}).then(()=> {
+                document.getElementById('newClassName').value = '';
+            });
+        }
+        function deleteClass(e, id) { 
+            e.stopPropagation(); 
+            if(confirm("هل أنت متأكد من حذف الصف وجميع طلابه؟")) db.ref(`users/${currentUser}/classes/${id}`).remove(); 
+        }
+        function selectClass(id, name) { 
+            currentClassId = id; 
+            document.getElementById('dashClassName').innerText = `(${name})`; 
+            nav('dashboard'); updateStats(); 
+        }
+
+        // الطلاب واكسل
+        function addStudent() {
+            const n = document.getElementById('stdName').value, i = document.getElementById('stdId').value;
+            if(!currentClassId) return alert("اختر صفاً أولاً");
+            if(n && i) db.ref(`users/${currentUser}/classes/${currentClassId}/students/${i}`).update({
+                name:n, points:0, grades:{hw:0, part:0, mid:0, final:0}
+            });
+        }
+        function importFromExcel(e) {
+            if(!currentClassId) return alert("اختر صفاً أولاً من قائمة الصفوف");
+            const file = e.target.files[0]; const reader = new FileReader();
+            reader.onload = ev => {
+                const data = new Uint8Array(ev.target.result), wb = XLSX.read(data, {type:'array'});
+                const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                json.forEach(row => {
+                    const name = row['الاسم'] || row['name'] || row['Name'], id = row['الرقم'] || row['id'] || row['ID'];
+                    if(name && id) db.ref(`users/${currentUser}/classes/${currentClassId}/students/${id}`).update({name, points:0});
+                });
+                alert("تم استيراد الطلاب بنجاح");
+            }; reader.readAsArrayBuffer(file);
+        }
+        function renderStudents() {
+            if(!currentClassId) return;
+            const search = document.getElementById('searchStd').value.toLowerCase();
+            db.ref(`users/${currentUser}/classes/${currentClassId}/students`).on('value', snap => {
+                const tb = document.querySelector('#stdTable tbody'); tb.innerHTML = '';
+                snap.forEach(s => {
+                    if(s.val().name.toLowerCase().includes(search) || s.key.includes(search)) {
+                        tb.innerHTML += `<tr><td>${s.key}</td><td>${s.val().name}</td><td><button class="btn-danger" style="padding:5px" onclick="delStd('${s.key}')">حذف</button></td></tr>`;
+                    }
+                });
+            });
+        }
+        function delStd(id) { if(confirm("حذف الطالب؟")) db.ref(`users/${currentUser}/classes/${currentClassId}/students/${id}`).remove(); }
+
+        // كشف الدرجات
+        function renderGrades() {
+            if(!currentClassId) return;
+            db.ref(`users/${currentUser}/classes/${currentClassId}/students`).on('value', snap => {
+                const tb = document.querySelector('#gradesTable tbody'); tb.innerHTML = '';
+                snap.forEach(s => {
+                    const g = s.val().grades || {hw:0, part:0, mid:0, final:0};
+                    const total = (Number(g.hw)||0) + (Number(g.part)||0) + (Number(g.mid)||0) + (Number(g.final)||0);
+                    tb.innerHTML += `<tr>
+                        <td>${s.key}</td><td>${s.val().name}</td>
+                        <td><input type="number" value="${g.hw}" onchange="upGrade('${s.key}','hw',this.value)"></td>
+                        <td><input type="number" value="${g.part}" onchange="upGrade('${s.key}','part',this.value)"></td>
+                        <td><input type="number" value="${g.mid}" onchange="upGrade('${s.key}','mid',this.value)"></td>
+                        <td><input type="number" value="${g.final}" onchange="upGrade('${s.key}','final',this.value)"></td>
+                        <td><b>${total}</b></td></tr>`;
+                });
+            });
+        }
+        function upGrade(sid, type, val) { db.ref(`users/${currentUser}/classes/${currentClassId}/students/${sid}/grades/${type}`).set(Number(val)); }
+
+        // التفاعل السريع
+        function renderInteraction() {
+            if(!currentClassId) return;
+            db.ref(`users/${currentUser}/classes/${currentClassId}/students`).on('value', snap => {
+                const div = document.getElementById('interCards'); div.innerHTML = '';
+                snap.forEach(s => {
+                    div.innerHTML += `<div class="card" style="text-align:center; padding:15px;">
+                        <h4 style="margin-bottom:5px;">${s.val().name}</h4>
+                        <p style="font-size:1.2rem; color:var(--accent); font-weight:bold;">النقاط: ${s.val().points || 0}</p>
+                        <button class="btn btn-success" style="width:100%; margin-top:10px;" onclick="addPt('${s.key}')">+1 نقطة</button></div>`;
+                });
+            });
+        }
+        function addPt(id) { db.ref(`users/${currentUser}/classes/${currentClassId}/students/${id}/points`).transaction(p => (p||0)+1); }
+
+        // الحضور
+        function renderAttendance() {
+            if(!currentClassId) return alert("اختر صفاً أولاً");
+            document.getElementById('attList').style.display='block';
+            db.ref(`users/${currentUser}/classes/${currentClassId}/students`).once('value', snap => {
+                const tb = document.querySelector('#attTable tbody'); tb.innerHTML = '';
+                snap.forEach(s => { tb.innerHTML += `<tr><td>${s.val().name}</td><td><input type="checkbox" data-id="${s.key}" checked></td></tr>`; });
+            });
+        }
+        function saveAttendance() {
+            const d = document.getElementById('attDate').value, l = document.getElementById('lectureName').value;
+            if(!d) return alert("حدد التاريخ");
+            document.querySelectorAll('#attTable input:checked').forEach(i => addPt(i.dataset.id));
+            db.ref(`users/${currentUser}/classes/${currentClassId}/attendance/${d}`).set({lecture:l || "محاضرة"});
+            alert("تم حفظ الحضور ومنح النقاط بنجاح");
+        }
+
+        // الإعدادات والإحصائيات
+        function loadSettings() {
+            db.ref(`users/${currentUser}/settings`).once('value', snap => {
+                const s = snap.val() || {hw:20, part:10, mid:30, final:40};
+                document.getElementById('maxHw').value = s.hw; document.getElementById('maxPart').value = s.part;
+                document.getElementById('maxMid').value = s.mid; document.getElementById('maxFinal').value = s.final;
+            });
+        }
+        function saveSettings() {
+            const s = {
+                hw: document.getElementById('maxHw').value, part: document.getElementById('maxPart').value,
+                mid: document.getElementById('maxMid').value, final: document.getElementById('maxFinal').value
+            };
+            db.ref(`users/${currentUser}/settings`).set(s).then(()=> alert("تم حفظ توزيع الدرجات"));
+        }
+        function updateStats() {
+            db.ref(`users/${currentUser}/classes/${currentClassId}/students`).on('value', snap => {
+                const count = snap.numChildren();
+                document.getElementById('statCount').innerText = count;
+                // حساب متوسط بسيط
+                let sum = 0;
+                snap.forEach(s => {
+                    const g = s.val().grades || {};
+                    sum += (Number(g.hw)||0)+(Number(g.part)||0)+(Number(g.mid)||0)+(Number(g.final)||0);
+                });
+                document.getElementById('statAvg').innerText = count > 0 ? (sum/count).toFixed(1) : 0;
+            });
+        }
+
+        // الكاميرا والتسجيل
+        let recorder, chunks = [];
+        async function toggleCamera() { 
+            try {
+                const s = await navigator.mediaDevices.getUserMedia({video:true, audio:true}); 
+                document.getElementById('videoPreview').srcObject = s; 
+            } catch(e) { alert("تعذر تشغيل الكاميرا"); }
+        }
+        function startRecording() {
+            chunks = []; recorder = new MediaRecorder(document.getElementById('videoPreview').srcObject);
+            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.onstop = () => document.getElementById('downloadBtn').style.display='inline-block';
+            recorder.start(); 
+            document.getElementById('startRec').style.display='none'; 
+            document.getElementById('stopRec').style.display='inline-block';
+        }
+        function stopRecording() { 
+            recorder.stop(); 
+            document.getElementById('stopRec').style.display='none'; 
+            document.getElementById('startRec').style.display='inline-block'; 
+        }
+        function downloadVideo() {
+            const blob = new Blob(chunks, {type:'video/webm'}); const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download='lecture_recording.webm'; a.click();
+        }
+
+        function exportExcel() { 
+            const wb = XLSX.utils.table_to_book(document.getElementById('gradesTable')); 
+            XLSX.writeFile(wb, "سجل_الدرجات.xlsx"); 
+        }
+    </script>
+</body>
+</html>
